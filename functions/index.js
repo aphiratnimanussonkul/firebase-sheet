@@ -44,7 +44,29 @@ exports.copyDataToSheet = functions.database
           Object.keys(dataByColumn).length - 1
         ];
         const recentlyData = dataByColumn[lastKey];
-        sendToGoogleSheet(recentlyData, index);
+        let score;
+        console.log(key, index);
+        switch (key) {
+          case "RPM":
+            score = calculateRPMScore(recentlyData);
+            break;
+          case "Velocity":
+            score = calculateVelocityScore(recentlyData);
+            break;
+          case "Temp":
+            score = calculateTempurtureScore(recentlyData);
+            break;
+          case "engine":
+            score = calculateEngineScore(recentlyData);
+            break;
+          case "Throttle":
+            score = calculateThrottleScore(recentlyData);
+            break;
+          default:
+            score = 1;
+            break;
+        }
+        sendToGoogleSheet(score, index);
       }
     });
   });
@@ -52,7 +74,7 @@ exports.copyDataToSheet = functions.database
 async function sendToGoogleSheet(data, index) {
   await jwtClient.authorize();
   const dataOnSheet = await getDataOnSheet();
-  
+
   const request = createGoogleSheetRequest(data, index, dataOnSheet);
 
   await sheets.spreadsheets.values.update(request, {});
@@ -78,4 +100,31 @@ function createGoogleSheetRequest(data, columnIndex, dataOnSheet) {
       values: [[data]],
     },
   };
+}
+
+function calculateVelocityScore(velocity) {
+  return velocity >= 160 ? 1 : velocity >= 130 ? 2 : velocity >= 110 ? 3 : 4;
+}
+
+function calculateTempurtureScore(tempurture) {
+  console.log(tempurture >= 100);
+  return tempurture >= 100
+    ? 1
+    : tempurture >= 95
+    ? 2
+    : tempurture >= 90
+    ? 3
+    : 4;
+}
+
+function calculateRPMScore(rpm) {
+  return rpm >= 4800 ? 1 : rpm >= 3800 ? 2 : rpm >= 2800 ? 3 : 4;
+}
+
+function calculateEngineScore(engine) {
+  return engine >= 61 ? 1 : engine >= 51 ? 2 : engine >= 41 ? 3 : 4;
+}
+
+function calculateThrottleScore(throttle) {
+  return throttle >= 61 ? 1 : throttle >= 51 ? 2 : throttle >= 41 ? 3 : 4;
 }

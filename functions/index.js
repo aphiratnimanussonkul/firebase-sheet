@@ -22,7 +22,7 @@ const jwtClient = new google.auth.JWT({
   scopes: ["https://www.googleapis.com/auth/spreadsheets"], // read and write sheets
 });
 
-const key = ["RPM", "Velocity", "Temp", "engine", "Throttle"];
+const key = ["RPM", "engine", "Temp", "Throttle", "Velocity"];
 const sheetName = "Vehicle";
 const columnNameList = [
   sheetName.concat("!A"),
@@ -45,7 +45,6 @@ exports.copyDataToSheet = functions.database
         ];
         const recentlyData = dataByColumn[lastKey];
         let score;
-        console.log(key, index);
         switch (key) {
           case "RPM":
             score = calculateRPMScore(recentlyData);
@@ -103,7 +102,15 @@ function createGoogleSheetRequest(data, columnIndex, dataOnSheet) {
 }
 
 function calculateVelocityScore(velocity) {
-  return velocity >= 160 ? 1 : velocity >= 130 ? 2 : velocity >= 110 ? 3 : 4;
+  return velocity >= 160
+    ? 1
+    : velocity >= 130
+    ? 2
+    : velocity >= 110
+    ? 3
+    : velocity == 0
+    ? 0
+    : 4;
 }
 
 function calculateTempurtureScore(tempurture) {
@@ -114,17 +121,35 @@ function calculateTempurtureScore(tempurture) {
     ? 2
     : tempurture >= 90
     ? 3
+    : tempurture == 0
+    ? 0
     : 4;
 }
 
 function calculateRPMScore(rpm) {
-  return rpm >= 4800 ? 1 : rpm >= 3800 ? 2 : rpm >= 2800 ? 3 : 4;
+  return rpm >= 4800 ? 1 : rpm >= 3800 ? 2 : rpm >= 2800 ? 3 : rpm == 0 ? 0 : 4;
 }
 
 function calculateEngineScore(engine) {
-  return engine >= 61 ? 1 : engine >= 51 ? 2 : engine >= 41 ? 3 : 4;
+  return engine >= 61
+    ? 1
+    : engine >= 51
+    ? 2
+    : engine >= 41
+    ? 3
+    : engine == 0
+    ? 0
+    : 4;
 }
 
 function calculateThrottleScore(throttle) {
-  return throttle >= 61 ? 1 : throttle >= 51 ? 2 : throttle >= 41 ? 3 : 4;
+  return throttle >= 61
+    ? 1
+    : throttle >= 51
+    ? 2
+    : throttle >= 41
+    ? 3
+    : throttle == 0
+    ? 0
+    : 4;
 }

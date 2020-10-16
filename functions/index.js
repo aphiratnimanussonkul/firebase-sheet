@@ -33,6 +33,14 @@ const columnNameList = [
 ];
 const columnNameEndList = [":A", ":B", ":C", ":D", ":E"];
 
+let lastKeyEachIndicator = {
+  RPM: "",
+  engine: "",
+  Temp: "",
+  Throttle: "",
+  Velocity: "",
+};
+
 exports.copyDataToSheet = functions.database
   .ref("/")
   .onWrite(async (created, context) => {
@@ -43,29 +51,34 @@ exports.copyDataToSheet = functions.database
         var lastKey = Object.keys(dataByColumn)[
           Object.keys(dataByColumn).length - 1
         ];
-        const recentlyData = dataByColumn[lastKey];
-        let score;
-        switch (key) {
-          case "RPM":
-            score = calculateRPMScore(recentlyData);
-            break;
-          case "Velocity":
-            score = calculateVelocityScore(recentlyData);
-            break;
-          case "Temp":
-            score = calculateTempurtureScore(recentlyData);
-            break;
-          case "engine":
-            score = calculateEngineScore(recentlyData);
-            break;
-          case "Throttle":
-            score = calculateThrottleScore(recentlyData);
-            break;
-          default:
-            score = 1;
-            break;
+
+        if (lastKeyEachIndicator[key] !== lastKey) {
+          lastKeyEachIndicator[key] = lastKey;
+          const recentlyData = dataByColumn[lastKey];
+
+          let score;
+          switch (key) {
+            case "RPM":
+              score = calculateRPMScore(recentlyData);
+              break;
+            case "Velocity":
+              score = calculateVelocityScore(recentlyData);
+              break;
+            case "Temp":
+              score = calculateTempurtureScore(recentlyData);
+              break;
+            case "engine":
+              score = calculateEngineScore(recentlyData);
+              break;
+            case "Throttle":
+              score = calculateThrottleScore(recentlyData);
+              break;
+            default:
+              score = 1;
+              break;
+          }
+          sendToGoogleSheet(score, index);
         }
-        sendToGoogleSheet(score, index);
       }
     });
   });

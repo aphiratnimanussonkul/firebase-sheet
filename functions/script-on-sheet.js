@@ -1,6 +1,8 @@
 const sourceSpreadsheet = SpreadsheetApp.getActive();
 const dataSheet = sourceSpreadsheet.getSheets()[0];
 
+const indicatorKey = ["RPM", "Engine", "Temp", "Throttle", "Velocity"]
+
 function checkVehicleStop() {
   let lastRow = dataSheet.getLastRow()
 
@@ -12,6 +14,7 @@ function checkVehicleStop() {
     }
   } else {
     let lastRowScores = dataSheet.getRange(`A${lastRow}:E${lastRow}`).getValues();
+    console.log(lastRowScores);
     if(lastRowScores[0].reduce((prev, current) => prev + current) === 0) {
       createRedarChartAndGeneratePdf();
     }
@@ -19,10 +22,9 @@ function checkVehicleStop() {
 }
 
 function createRedarChartAndGeneratePdf() {
-  
-  let lastRow = filterDataAndGetLastRow();
-  let averageScore = getAverageScore(lastRow);
-  setAverageScore(averageScore.map(score => [score]));
+  let scoresSum = sumScoreByIndicator();
+  let averageScore = averageScores(scoresSum);
+  setAverageScore(averageScore);
   
   generateRadarChart();
   
@@ -32,26 +34,57 @@ function createRedarChartAndGeneratePdf() {
   deleteCharts();
 }
 
-function filterDataAndGetLastRow() {
-  let scoreList = dataSheet.getRange("A2:E").getValues();
-  let filterScore = scoreList.filter((row) => row.findIndex((score) => score === '' || score === 0) === -1);
-  
-  clearData();
 
-  dataSheet.getRange(`A2:E${filterScore.length + 1}`).setValues(filterScore);
-  return filterScore.length
-}
 
 function clearData() {
   dataSheet.getRange("A2:E").clear();
   dataSheet.getRange("I2:I6").clear();
 }
 
-function getAverageScore(lastRow) {
-  let scoreList = dataSheet.getRange(`A2:E${lastRow + 1}`).getValues();
-  let sumScores = scoreList.reduce((prev, current, currentIndex) =>  current.map((score, index) =>  score + prev[index]));
-  let averageScore = sumScores.map(score => Math.ceil(score / scoreList.length));
-  return averageScore;
+
+
+function sumScoreByIndicator() { 
+  let scores = {
+    "RPM": {
+      score: 0,
+      count: 0
+    },
+    "Engine": {
+      score: 0,
+      count: 0
+    },
+    "Temp": {
+      score: 0,
+      count: 0
+    },
+    "Throttle": {
+      score: 0,
+      count: 0
+    },
+    "Velocity": {
+      score: 0,
+      count: 0
+    },
+  }
+  
+  let scoreList = dataSheet.getRange("A2:E").getValues();
+  
+  scoreList.forEach(row => {
+             row.forEach((score, index) => {
+                 scores[indicatorKey[index]].score += Number(score)
+                 scores[indicatorKey[index]].count += Number(score) === 0 ? 0 : 1;
+         })
+  })
+
+  return scores
+}
+
+function averageScores(scores) {
+  let averageScoreList = Object.keys(scores).map(indicator => {
+                                                 return Math.ceil(scores[indicator].score / scores[indicator].count)
+  })
+  
+  return averageScoreList.map(score => [score]);
 }
 
 function setAverageScore(avgScore) {
@@ -125,4 +158,21 @@ function generatePdf() {
 function deleteCharts() {
   let charts = dataSheet.getCharts();
   charts.forEach((chart) => dataSheet.removeChart(chart));
+}
+
+function filterDataAndGetLastRow() {
+  let scoreList = dataSheet.getRange("A2:E").getValues();
+  let filterScore = scoreList.filter((row) => row.findIndex((score) => score === '' || score === 0) === -1);
+  
+  clearData();
+
+  dataSheet.getRange(`A2:E${filterScore.length + 1}`).setValues(filterScore);
+  return filterScore.length
+}
+
+function getAverageScore(lastRow) {
+  let scoreList = dataSheet.getRange(`A2:E${lastRow + 1}`).getValues();
+  let sumScores = scoreList.reduce((prev, current, currentIndex) =>  current.map((score, index) =>  score + prev[index]));
+  let averageScore = sumScores.map(score => Math.ceil(score / scoreList.length));
+  return averageScore;
 }

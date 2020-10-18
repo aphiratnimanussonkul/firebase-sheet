@@ -41,9 +41,12 @@ let lastKeyEachIndicator = {
   Velocity: "",
 };
 
+let intervalId;
+
 exports.copyDataToSheet = functions.database
   .ref("/")
   .onWrite(async (created, context) => {
+    setIntervalOneMinute();
     let data = created.after.val();
     key.forEach((key, index) => {
       const dataByColumn = data[key];
@@ -82,6 +85,32 @@ exports.copyDataToSheet = functions.database
       }
     });
   });
+
+function setIntervalOneMinute() {
+  clearInterval(intervalId);
+  intervalId = setInterval(() => {
+    clearInterval(intervalId);
+    sendSignalVehicelStop();
+  }, 60000);
+}
+
+async function sendSignalVehicelStop() {
+  await jwtClient.authorize();
+  const dataOnSheet = await getDataOnSheet();
+  let lastRow = dataOnSheet.length + 1;
+
+  const request = {
+    auth: jwtClient,
+    spreadsheetId: googleSheet.spreadsheetId,
+    range: `${columnNameList[0]}${lastRow}${columnNameEndList[4]}${lastRow}`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[0, 0, 0, 0, 0]],
+    },
+  };
+
+  await sheets.spreadsheets.values.update(request, {});
+}
 
 async function sendToGoogleSheet(data, index) {
   await jwtClient.authorize();
